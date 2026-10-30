@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Tasks</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Georgia, serif;
+            background: #d9a8e5;
+            margin: 0;
+            min-height: 100vh;
+            padding: 35px 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: #fff4bd;
+            width: 100%;
+            max-width: 440px;
+            padding: 30px 25px;
+            border-radius: 18px;
+            box-shadow: 0 8px 25px rgba(70, 30, 80, 0.18);
+        }
+
+        h1 {
+            color: #33283b;
+            font-size: 30px;
+            margin: 0 0 8px;
+        }
+
+        .subtitle {
+            color: #8d8172;
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            min-width: 0;
+            padding: 13px 12px;
+            border: 1px solid #e4d9ce;
+            border-radius: 9px;
+            font-family: inherit;
+            font-size: 14px;
+            background: #fff;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #d28adf;
+            box-shadow: 0 0 0 2px #f0d8f5;
+        }
+
+        button {
+            border: none;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        #addButton {
+            background: #dca0e8;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 9px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        #addButton:hover {
+            background: #c77bd7;
+            transform: translateY(-1px);
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f7faff;
+            padding: 13px 12px;
+            border-radius: 9px;
+            margin-bottom: 12px;
+            border: 1px solid #f0e8d7;
+        }
+
+        .task-text {
+            flex: 1;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            font-size: 14px;
+            color: #443b42;
+            cursor: pointer;
+            line-height: 1.5;
+        }
+
+        .task-text.completed {
+            text-decoration: line-through;
+            color: #a29aa3;
+        }
+
+        .check-button {
+            width: 19px;
+            height: 19px;
+            flex-shrink: 0;
+            border: 2px solid #b7b5bc;
+            border-radius: 6px;
+            background: white;
+            color: white;
+            font-size: 12px;
+            padding: 0;
+        }
+
+        .check-button.checked {
+            background: #c77bd7;
+            border-color: #c77bd7;
+        }
+
+        .delete-button {
+            background: #f17e83;
+            color: white;
+            padding: 9px 10px;
+            border-radius: 7px;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .delete-button:hover {
+            background: #e35c68;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #9a8e7c;
+            padding: 18px 5px;
+            font-size: 14px;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #eee2b0;
+            margin-top: 25px;
+            padding-top: 18px;
+            color: #8d8172;
+            font-size: 12px;
+        }
+
+        #clearButton {
+            background: transparent;
+            color: #b34f69;
+            font-size: 12px;
+            padding: 5px;
+        }
+
+        #clearButton:hover {
+            color: #81354a;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 380px) {
+            .container {
+                padding: 23px 16px;
+            }
+
+            h1 {
+                font-size: 26px;
+            }
+
+            #addButton {
+                padding: 10px;
+            }
+
+            .delete-button {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>My Tasks</h1>
+
+        <p class="subtitle">
+            Stay organized and productive ✨
+        </p>
+
+        <div class="input-area">
+            <input
+                type="text"
+                id="taskInput"
+                placeholder="What needs to be done?"
+                aria-label="Enter a new task"
+            >
+
+            <button id="addButton">Add Task</button>
+        </div>
+
+        <ul id="taskList"></ul>
+
+        <div class="footer">
+            <span id="taskCount">0 tasks</span>
+
+            <button id="clearButton">Clear All</button>
+
+            <span id="completedCount">0 completed</span>
+        </div>
+
+    </div>
+
+    <script>
+        const input = document.getElementById("taskInput");
+        const addButton = document.getElementById("addButton");
+        const taskList = document.getElementById("taskList");
+        const clearButton = document.getElementById("clearButton");
+        const taskCount = document.getElementById("taskCount");
+        const completedCount = document.getElementById("completedCount");
+
+        let tasks = [];
+
+        // Load previously saved tasks
+        function loadTasks() {
+            try {
+                const savedTasks = JSON.parse(
+                    localStorage.getItem("myTasks")
+                );
+
+                if (Array.isArray(savedTasks)) {
+                    tasks = savedTasks
+                        .filter(task =>
+                            task &&
+                            typeof task.text === "string"
+                        )
+                        .map(task => ({
+                            text: task.text,
+                            completed: task.completed === true
+                        }));
+                }
+            } catch (error) {
+                tasks = [];
+            }
+
+            renderTasks();
+        }
+
+        // Save tasks in the browser
+        function saveTasks() {
+            localStorage.setItem(
+                "myTasks",
+                JSON.stringify(tasks)
+            );
+        }
+
+        // Display all tasks
+        function renderTasks() {
+            taskList.innerHTML = "";
+
+            if (tasks.length === 0) {
+                const emptyMessage = document.createElement("li");
+                emptyMessage.className = "empty-message";
+                emptyMessage.textContent =
+                    "No tasks yet. Add your first task! 🌷";
+                taskList.appendChild(emptyMessage);
+            }
+
+            tasks.forEach(function(task, index) {
+                const li = document.createElement("li");
+
+                const checkButton = document.createElement("button");
+                checkButton.className = "check-button";
+
+                if (task.completed) {
+                    checkButton.classList.add("checked");
+                    checkButton.textContent = "✓";
+                }
+
+                checkButton.setAttribute(
+                    "aria-label",
+                    task.completed
+                        ? "Mark task as incomplete"
+                        : "Mark task as complete"
+                );
+
+                const taskText = document.createElement("span");
+                taskText.className = "task-text";
+                taskText.textContent = task.text;
+
+                if (task.completed) {
+                    taskText.classList.add("completed");
+                }
+
+                // Mark task complete or incomplete
+                function toggleTask() {
+                    tasks[index].completed =
+                        !tasks[index].completed;
+
+                    saveTasks();
+                    renderTasks();
+                }
+
+                checkButton.addEventListener("click", toggleTask);
+                taskText.addEventListener("click", toggleTask);
+
+                const deleteButton = document.createElement("button");
+                deleteButton.className = "delete-button";
+                deleteButton.textContent = "Delete";
+
+                deleteButton.addEventListener("click", function() {
+                    tasks.splice(index, 1);
+                    saveTasks();
+                    renderTasks();
+                });
+
+                li.appendChild(checkButton);
+                li.appendChild(taskText);
+                li.appendChild(deleteButton);
+
+                taskList.appendChild(li);
+            });
+
+            taskCount.textContent =
+                tasks.length + (tasks.length === 1 ? " task" : " tasks");
+
+            const completed = tasks.filter(
+                task => task.completed
+            ).length;
+
+            completedCount.textContent =
+                completed + " completed";
+        }
+
+        // Add a new task
+        function addTask() {
+            const task = input.value.trim();
+
+            if (task === "") {
+                input.focus();
+                return;
+            }
+
+            tasks.push({
+                text: task,
+                completed: false
+            });
+
+            saveTasks();
+            renderTasks();
+
+            input.value = "";
+            input.focus();
+        }
+
+        addButton.addEventListener("click", addTask);
+
+        // Add a task by pressing Enter
+        input.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                addTask();
+            }
+        });
+
+        // Delete all tasks
+        clearButton.addEventListener("click", function() {
+            if (tasks.length === 0) {
+                return;
+            }
+
+            const confirmed = confirm(
+                "Are you sure you want to delete all tasks?"
+            );
+
+            if (confirmed) {
+                tasks = [];
+                saveTasks();
+                renderTasks();
+            }
+        });
+
+        // Start the application
+        loadTasks();
+    </script>
+
+</body>
+</html>
